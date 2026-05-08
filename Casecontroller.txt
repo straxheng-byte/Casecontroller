@@ -61,7 +61,9 @@ local caseContainer = casesWindow:WaitForChild("CaseContainer")
 
 -- 🛠️ AUTOMATICKÉ NASTAVENÍ LAYOUTU PRO DVA ŘÁDKY
 for _, child in pairs(caseContainer:GetChildren()) do
-	if child:IsA("UIListLayout") or child:IsA("UIGridLayout") or child:IsA("Frame") then child:Destroy() end
+	if child:IsA("UIListLayout") or child:IsA("UIGridLayout") or child:IsA("Frame") then
+		child:Destroy()
+	end
 end
 
 local mainLayout = Instance.new("UIListLayout")
@@ -151,11 +153,15 @@ if autoRollToggle then
 		if isAutoRolling then
 			autoRollToggle.Text = "AUTO-ROLL: ON"
 			autoRollToggle.TextColor3 = Color3.fromRGB(80, 255, 80)
-			if autoRollToggle:FindFirstChildOfClass("UIStroke") then autoRollToggle.UIStroke.Color = Color3.fromRGB(80, 255, 80) end
+			if autoRollToggle:FindFirstChildOfClass("UIStroke") then
+				autoRollToggle.UIStroke.Color = Color3.fromRGB(80, 255, 80)
+			end
 		else
 			autoRollToggle.Text = "AUTO-ROLL: OFF"
 			autoRollToggle.TextColor3 = Color3.fromRGB(255, 80, 80)
-			if autoRollToggle:FindFirstChildOfClass("UIStroke") then autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80) end
+			if autoRollToggle:FindFirstChildOfClass("UIStroke") then
+				autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80)
+			end
 		end
 	end)
 end
@@ -206,11 +212,15 @@ local function ShowPreview(caseName)
 	previewSpinBtn.Text = "SPIN - $" .. formattedPrice
 
 	for _, child in pairs(previewGrid:GetChildren()) do
-		if child:IsA("Frame") and child.Name ~= "ItemTemplate" then child:Destroy() end
+		if child:IsA("Frame") and child.Name ~= "ItemTemplate" then
+			child:Destroy()
+		end
 	end
 
 	local totalWeight = 0
-	for _, w in pairs(case.Weights) do totalWeight += w end
+	for _, w in pairs(case.Weights) do
+		totalWeight += w
+	end
 
 	local previewItems = {}
 	for rarity, items in pairs(case.Pool or {}) do
@@ -232,7 +242,11 @@ local function ShowPreview(caseName)
 	end
 
 	table.sort(previewItems, function(a, b)
-		if a.Priority ~= b.Priority then return a.Priority < b.Priority else return a.Name < b.Name end
+		if a.Priority ~= b.Priority then
+			return a.Priority < b.Priority
+		else
+			return a.Name < b.Name
+		end
 	end)
 
 	for _, item in ipairs(previewItems) do
@@ -241,19 +255,35 @@ local function ShowPreview(caseName)
 		slot.Visible = true
 		slot.Parent = previewGrid
 
-		if slot:FindFirstChild("ItemName") then slot.ItemName.Text = item.Name end
-		if slot:FindFirstChild("ItemIcon") then slot.ItemIcon.Image = item.Image or "rbxassetid://134566735" end
+		if slot:FindFirstChild("ItemName") then
+			slot.ItemName.Text = item.Name
+		end
+		if slot:FindFirstChild("ItemIcon") then
+			slot.ItemIcon.Image = item.Image or "rbxassetid://134566735"
+		end
 
 		local rColor = CaseData.RarityStats[item.Rarity] and CaseData.RarityStats[item.Rarity].Color or Color3.new(1,1,1)
-		if slot:FindFirstChild("UIStroke") then slot.UIStroke.Color = rColor end
-		if slot:FindFirstChild("ItemName") then slot.ItemName.TextColor3 = rColor end
+		if slot:FindFirstChild("UIStroke") then
+			slot.UIStroke.Color = rColor
+		end
+		if slot:FindFirstChild("ItemName") then
+			slot.ItemName.TextColor3 = rColor
+		end
 
 		local chanceText = ""
-		if item.Chance < 0.001 then chanceText = "<0.001%" else chanceText = string.format("%.3g%%", item.Chance) end
-		if slot:FindFirstChild("Chance") then slot.Chance.Text = chanceText end
+		if item.Chance < 0.001 then
+			chanceText = "<0.001%"
+		else
+			chanceText = string.format("%.3g%%", item.Chance)
+		end
+		if slot:FindFirstChild("Chance") then
+			slot.Chance.Text = chanceText
+		end
 	end
 
-	if previewSpinConnection then previewSpinConnection:Disconnect() end
+	if previewSpinConnection then
+		previewSpinConnection:Disconnect()
+	end
 	previewSpinConnection = previewSpinBtn.MouseButton1Click:Connect(function()
 		previewWindow.Visible = false
 		AttemptSpin(selectedCase, currentCasePrice)
@@ -311,7 +341,6 @@ local function CreateCaseCard(name, data, applyGlitchEffect, targetParent, slotI
 		end)
 	end
 
-	-- 🔥 TADY JE OPRAVENÉ NAČÍTÁNÍ IKONEK
 	local img = Instance.new("ImageLabel")
 	img.Size = UDim2.new(0.6, 0, 0.45, 0)
 	img.Position = UDim2.new(0.2, 0, 0.05, 0)
@@ -329,9 +358,13 @@ local function CreateCaseCard(name, data, applyGlitchEffect, targetParent, slotI
 	price.BackgroundTransparency = 1
 
 	local formattedPrice
-	if data.Price >= 1000000 then formattedPrice = string.format("$%.1fM", data.Price/1000000)
-	elseif data.Price >= 1000 then formattedPrice = string.format("$%.1fk", data.Price/1000)
-	else formattedPrice = "$" .. tostring(data.Price) end
+	if data.Price >= 1000000 then
+		formattedPrice = string.format("$%.1fM", data.Price/1000000)
+	elseif data.Price >= 1000 then
+		formattedPrice = string.format("$%.1fk", data.Price/1000)
+	else 
+		formattedPrice = "$" .. tostring(data.Price)
+	end
 
 	price.Text = formattedPrice
 	price.Font = Enum.Font.GothamBold
@@ -356,7 +389,9 @@ function AttemptSpin(caseName, price)
 		if autoRollToggle then
 			autoRollToggle.Text = "AUTO-ROLL: OFF"
 			autoRollToggle.TextColor3 = Color3.fromRGB(255, 80, 80)
-			if autoRollToggle:FindFirstChildOfClass("UIStroke") then autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80) end
+			if autoRollToggle:FindFirstChildOfClass("UIStroke") then
+				autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80)
+			end
 		end
 		previewWindow.Visible = true
 		return
@@ -366,7 +401,9 @@ function AttemptSpin(caseName, price)
 	casesWindow.Visible = false
 	mainFrame.Visible = true
 
-	if openBtn then openBtn.Visible = false end
+	if openBtn then
+		openBtn.Visible = false
+	end
 
 	currentRollTask = currentRollTask + 1
 	local thisTask = currentRollTask
@@ -390,8 +427,12 @@ function AttemptSpin(caseName, price)
 		casesWindow.Visible = true
 		previewWindow.Visible = true
 		isAutoRolling = false
-		if openBtn then openBtn.Visible = true end
-		if rollingLabel then rollingLabel.Visible = false end
+		if openBtn then
+			openBtn.Visible = true
+		end
+		if rollingLabel then
+			rollingLabel.Visible = false
+		end
 		return
 	end
 
@@ -407,17 +448,25 @@ function AttemptSpin(caseName, price)
 		openLvl = upgradesFolder.OpenLevel.Value
 	end
 
-	local SPIN_TIME = 6.0 + (openLvl * -0.2) 
-	if SPIN_TIME < 0.5 then SPIN_TIME = 0.5 end 
+	-- 🔥 OPRAVA RYCHLOSTI TOČENÍ
+	local speedMult = player:GetAttribute("SpeedMult") or 1.0
+	local SPIN_TIME = (6.0 + (openLvl * -0.2)) / speedMult
+	if SPIN_TIME < 0.2 then SPIN_TIME = 0.2 end 
 
 	spinner.CanvasPosition = Vector2.new(0, 0)
 	for _, child in pairs(spinner:GetChildren()) do
-		if child.Name == "ItemCard" then child:Destroy() end
+		if child.Name == "ItemCard" then
+			child:Destroy()
+		end
 	end
 
 	local spinLayout = spinner:FindFirstChild("UIListLayout") or Instance.new("UIListLayout", spinner)
 	spinLayout.FillDirection = Enum.FillDirection.Horizontal
 	spinLayout.Padding = UDim.new(0, PADDING)
+
+	-- 🔥 NAČTENÍ STATŮ PRO KŘOVÍ
+	local luckMult = player:GetAttribute("LuckMult") or 1.0
+	local mutMult = player:GetAttribute("MutationMult") or 1.0
 
 	for i = 1, TOTAL_ITEMS do
 		local success, err = pcall(function()
@@ -426,14 +475,16 @@ function AttemptSpin(caseName, price)
 			card.Visible = true
 			card.Parent = spinner
 
-			local itemToShow = (i == WINNER_INDEX) and result or CaseData.RollCase(caseName)
+			local itemToShow = (i == WINNER_INDEX) and result or CaseData.RollCase(caseName, luckMult, mutMult, 0)
 
 			if type(itemToShow) ~= "table" then
 				itemToShow = { Name = "???", Image = "rbxassetid://134566735", Rarity = {Color = Color3.fromRGB(100,100,100)} }
 			end
 
 			local rColor = Color3.fromRGB(150, 150, 150)
-			if itemToShow.Rarity and itemToShow.Rarity.Color then rColor = itemToShow.Rarity.Color end
+			if itemToShow.Rarity and itemToShow.Rarity.Color then
+				rColor = itemToShow.Rarity.Color
+			end
 
 			if card:FindFirstChild("ColorBar") then 
 				card.ColorBar.BackgroundColor3 = rColor 
@@ -442,9 +493,13 @@ function AttemptSpin(caseName, price)
 			end
 
 			local staraIkona = card:FindFirstChild("Icon")
-			if staraIkona then staraIkona:Destroy() end
+			if staraIkona then
+				staraIkona:Destroy()
+			end
 			local staryText = card:FindFirstChild("ItemName")
-			if staryText then staryText:Destroy() end
+			if staryText then
+				staryText:Destroy()
+			end
 
 			local novaIkona = Instance.new("ImageLabel")
 			novaIkona.Name = "Icon"
@@ -478,7 +533,7 @@ function AttemptSpin(caseName, price)
 		end)
 
 		if not success then
-			warn("Chyba při generování karty: " .. tostring(err))
+			warn("Chyba pri generování karty: " .. tostring(err))
 		end
 	end
 
@@ -499,9 +554,11 @@ function AttemptSpin(caseName, price)
 		local lastCardIndex = 0
 		local lastSoundTime = 0 
 
-		-- 🔥 ZVUKY BEDNY (TIKÁNÍ): Zjistí stav (pokud není uložen, defaultně zapnuto)
+		-- 🔥 ZVUKY BEDNY (TIKANÍ): Zjistí stav (pokud není uložen, defaultně zapnuto)
 		local playCaseSounds = player:GetAttribute("Pref_MutationVol")
-		if playCaseSounds == nil then playCaseSounds = true end
+		if playCaseSounds == nil then
+			playCaseSounds = true
+		end
 
 		connection = RunService.RenderStepped:Connect(function()
 			local currentX = spinner.CanvasPosition.X
@@ -522,7 +579,9 @@ function AttemptSpin(caseName, price)
 	tween:Play()
 	tween.Completed:Wait() 
 
-	if connection then connection:Disconnect() end 
+	if connection then
+		connection:Disconnect()
+	end 
 	ShowReward(result)
 end
 
@@ -533,8 +592,12 @@ function ShowReward(item)
 		mainFrame.Visible = false
 		casesWindow.Visible = true
 		previewWindow.Visible = true
-		if openBtn then openBtn.Visible = true end
-		if rollingLabel then rollingLabel.Visible = false end
+		if openBtn then
+			openBtn.Visible = true
+		end
+		if rollingLabel then
+			rollingLabel.Visible = false
+		end
 		return 
 	end
 
@@ -548,7 +611,9 @@ function ShowReward(item)
 	if isAutoSoldFromSettings then
 		local sellRemote = ReplicatedStorage:FindFirstChild("SellItem") or ReplicatedStorage:FindFirstChild("SellItemEvent") or ReplicatedStorage:FindFirstChild("Sell")
 		if sellRemote then
-			pcall(function() sellRemote:FireServer(item.Name, item.Value) end)
+			pcall(function()
+				sellRemote:FireServer(item.Name, item.Value)
+			end)
 		end
 		item.AutoSold = true
 	end
@@ -575,7 +640,9 @@ function ShowReward(item)
 	local currentCaseData = CaseData.Cases[selectedCase]
 	if currentCaseData then
 		local totalWeight = 0
-		for _, w in pairs(currentCaseData.Weights) do totalWeight += w end
+		for _, w in pairs(currentCaseData.Weights) do
+			totalWeight += w
+		end
 		dropChance = ((currentCaseData.Weights[rName] or 0) / totalWeight) * 100
 	end
 
@@ -585,36 +652,55 @@ function ShowReward(item)
 
 	-- 🔥 2. ZVUKY VÝHRY
 	local playCaseSounds = player:GetAttribute("Pref_MutationVol")
-	if playCaseSounds == nil then playCaseSounds = true end
+	if playCaseSounds == nil then
+		playCaseSounds = true
+	end
 
 	if sounds and playCaseSounds then
 		if rName == "Transcendent" then
-			if sounds:FindFirstChild("JumpscareSound") then sounds.JumpscareSound:Play() end
+			if sounds:FindFirstChild("JumpscareSound") then
+				sounds.JumpscareSound:Play()
+			end
 			task.delay(2.5, function()
-				if sounds:FindFirstChild("TranscendentReveal") then sounds.TranscendentReveal:Play()
-				elseif sounds:FindFirstChild("WinTranscendent") then sounds.WinTranscendent:Play() end
+				if sounds:FindFirstChild("TranscendentReveal") then
+					sounds.TranscendentReveal:Play()
+				elseif sounds:FindFirstChild("WinTranscendent") then
+					sounds.WinTranscendent:Play()
+				end
 			end)
 		elseif isRareDrop then
-			if rName == "Seraphic" and sounds:FindFirstChild("WinSeraphic") then sounds.WinSeraphic:Play()
-			elseif rName == "Mythical" and sounds:FindFirstChild("WinMythical") then sounds.WinMythical:Play()
-			elseif rName == "Legendary" and sounds:FindFirstChild("WinLegendary") then sounds.WinLegendary:Play()
-			elseif rName == "Epic" and sounds:FindFirstChild("WinEpic") then sounds.WinEpic:Play()
-			elseif rName == "Rare" and sounds:FindFirstChild("WinRare") then sounds.WinRare:Play()
-			elseif sounds:FindFirstChild("WinCommon") then sounds.WinCommon:Play() end
+			if rName == "Seraphic" and sounds:FindFirstChild("WinSeraphic") then
+				sounds.WinSeraphic:Play()
+			elseif rName == "Mythical" and sounds:FindFirstChild("WinMythical") then
+				sounds.WinMythical:Play()
+			elseif rName == "Legendary" and sounds:FindFirstChild("WinLegendary") then
+				sounds.WinLegendary:Play()
+			elseif rName == "Epic" and sounds:FindFirstChild("WinEpic") then
+				sounds.WinEpic:Play()
+			elseif rName == "Rare" and sounds:FindFirstChild("WinRare") then
+				sounds.WinRare:Play()
+			elseif sounds:FindFirstChild("WinCommon") then
+				sounds.WinCommon:Play()
+			end
 		else
-			if sounds:FindFirstChild("WinCommon") then sounds.WinCommon:Play() end
+			if sounds:FindFirstChild("WinCommon") then
+				sounds.WinCommon:Play()
+			end
 		end
 	end
 
 	-- 🔥 3. EFEKTY A TŘESENÍ KAMERY (ABSOLUTNÍ BLOKACE)
 	local showEffects = player:GetAttribute("Pref_DropEffects")
-	if showEffects == nil then showEffects = true end
+	if showEffects == nil then
+		showEffects = true
+	end
 
 	local showShakes = player:GetAttribute("Pref_CameraShakes")
-	if showShakes == nil then showShakes = true end
+	if showShakes == nil then
+		showShakes = true
+	end
 
 	if rName == "Transcendent" then
-		-- TADY JE TEN KLÍČOVÝ FIX: Zabaleno DO podmínky showEffects
 		if showEffects then
 			local jumpFlash = Instance.new("Frame")
 			jumpFlash.Size = UDim2.new(10, 0, 10, 0)
@@ -627,7 +713,9 @@ function ShowReward(item)
 			local jumpText = Instance.new("TextLabel")
 			jumpText.Text = toZalgo("ANOMALY DETECTED")
 			jumpText.Font = Enum.Font.Creepster 
-			if jumpText.Font == Enum.Font.Legacy then jumpText.Font = Enum.Font.GothamBlack end
+			if jumpText.Font == Enum.Font.Legacy then
+				jumpText.Font = Enum.Font.GothamBlack
+			end
 			jumpText.TextColor3 = Color3.fromRGB(200, 0, 0)
 			jumpText.TextScaled = true
 			jumpText.Size = UDim2.new(1, 0, 0.3, 0)
@@ -644,7 +732,6 @@ function ShowReward(item)
 				local cam = workspace.CurrentCamera
 				local origFlashPos = UDim2.new(0.5, 0, 0.5, 0)
 				for i = 1, 40 do 
-					-- Zatřepe kamerou JEN KDYŽ je to zapnuté
 					if showShakes then
 						cam.CFrame = cam.CFrame * CFrame.new(math.random(-15, 15)/10, math.random(-15, 15)/10, 0)
 					end
@@ -747,25 +834,35 @@ function ShowReward(item)
 					if autoRollToggle then
 						autoRollToggle.Text = "AUTO-ROLL: OFF"
 						autoRollToggle.TextColor3 = Color3.fromRGB(255, 80, 80)
-						if autoRollToggle:FindFirstChildOfClass("UIStroke") then autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80) end
+						if autoRollToggle:FindFirstChildOfClass("UIStroke") then
+							autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80)
+						end
 					end
 					mainFrame.Visible = false
 					casesWindow.Visible = true
 					previewWindow.Visible = true
-					if openBtn then openBtn.Visible = true end
-					if rollingLabel then rollingLabel.Visible = false end
+					if openBtn then
+						openBtn.Visible = true
+					end
+					if rollingLabel then
+						rollingLabel.Visible = false
+					end
 				end
 			end
 		end)
 	end
 
-	if _G.ClaimConnection then _G.ClaimConnection:Disconnect() end
+	if _G.ClaimConnection then
+		_G.ClaimConnection:Disconnect()
+	end
 	_G.ClaimConnection = claimBtn.MouseButton1Click:Connect(function()
 		isAutoRolling = false
 		if autoRollToggle then
 			autoRollToggle.Text = "AUTO-ROLL: OFF"
 			autoRollToggle.TextColor3 = Color3.fromRGB(255, 80, 80)
-			if autoRollToggle:FindFirstChildOfClass("UIStroke") then autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80) end
+			if autoRollToggle:FindFirstChildOfClass("UIStroke") then
+				autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80)
+			end
 		end
 
 		if floatTween then floatTween:Cancel() end 
@@ -774,8 +871,12 @@ function ShowReward(item)
 		isSpinning = false 
 		casesWindow.Visible = true
 		previewWindow.Visible = true
-		if openBtn then openBtn.Visible = true end
-		if rollingLabel then rollingLabel.Visible = false end
+		if openBtn then
+			openBtn.Visible = true
+		end
+		if rollingLabel then
+			rollingLabel.Visible = false
+		end
 	end)
 end
 
