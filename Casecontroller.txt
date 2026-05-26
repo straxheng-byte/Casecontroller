@@ -9,6 +9,9 @@ local CaseData = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild(
 local SpinRemote = ReplicatedStorage:WaitForChild("SpinRequest")
 local player = Players.LocalPlayer
 
+-- 🔥 FIX: LOKÁLNÍ PROMĚNNÁ PRO MEMORY LEAK 🔥
+local claimConnection = nil
+
 local COLORS = {
 	Background = Color3.fromRGB(25, 25, 30),
 	CardBg = Color3.fromRGB(40, 45, 50),
@@ -24,7 +27,8 @@ local rarityPriority = {
 
 -- [[ ZALGO GENERATOR EFEKTU ]]
 local function toZalgo(text)
-	local zalgoChars = {"\204\141", "\204\142", "\204\143", "\204\144", "\204\145", "\204\146", "\204\147", "\204\148", "\204\149", "\204\150", "\204\151", "\204\152", "\204\153", "\204\154", "\204\155", "\204\156", "\204\157", "\204\158", "\204\159", "\204\160"}
+	local zalgoChars = {"\204\141", "\204\142", "\204\143", "\204\144", "\204\145", "\204\146", "\204\147", "\204\148", "\204\149", "\204\150", "\204\151", "\204\152", 
+		"\204\153", "\204\154", "\204\155", "\204\156", "\204\157", "\204\158", "\204\159", "\204\160"}
 	local result = ""
 	for i = 1, #text do
 		local char = text:sub(i, i)
@@ -227,6 +231,10 @@ local function ShowPreview(caseName)
 		local rWeight = case.Weights[rarity] or 0
 		local chanceToShow = (rWeight / totalWeight) * 100
 
+		-- 🔥 ROBLOX TOS FIX: ROZDELENIE ŠANCE MEDZI JEDNOTLIVÉ PREDMETY 🔥
+		local pocetItemovVRarite = #items
+		local skutocnaSanca = chanceToShow / pocetItemovVRarite
+
 		for _, itemName in ipairs(items) do
 			local data = CaseData.ItemDatabase[itemName]
 			if data then
@@ -234,7 +242,7 @@ local function ShowPreview(caseName)
 					Name = itemName,
 					Rarity = rarity,
 					Image = data.Image,
-					Chance = chanceToShow,
+					Chance = skutocnaSanca,
 					Priority = rarityPriority[rarity] or 99
 				})
 			end
@@ -271,10 +279,10 @@ local function ShowPreview(caseName)
 		end
 
 		local chanceText = ""
-		if item.Chance < 0.001 then
-			chanceText = "<0.001%"
+		if item.Chance < 0.01 then
+			chanceText = "<0.01%"
 		else
-			chanceText = string.format("%.3g%%", item.Chance)
+			chanceText = string.format("%.2f%%", item.Chance)
 		end
 		if slot:FindFirstChild("Chance") then
 			slot.Chance.Text = chanceText
@@ -379,6 +387,148 @@ local function CreateCaseCard(name, data, applyGlitchEffect, targetParent, slotI
 	end)
 end
 
+-- 🛠️ RYCHLÝ RANDOMIZÉR PRO FALEŠNÉ KARTY (Bez lagu)
+local function GetRandomVisualItem(caseName)
+	local case = CaseData.Cases[caseName]
+	if not case or not case.Pool then 
+		return { Name = "???", Image = "rbxassetid://134566735", Rarity = {Color = Color3.fromRGB(100,100,100)} } 
+	end
+	local rarities = {}
+	for r, _ in pairs(case.Pool) do table.insert(rarities, r) end
+	if #rarities == 0 then return { Name = "???", Image = "rbxassetid://134566735", Rarity = {Color = Color3.fromRGB(100,100,100)} } end
+
+	local r = rarities[math.random(1, #rarities)]
+	local items = case.Pool[r]
+	local iName = items[math.random(1, #items)]
+	local dbData = CaseData.ItemDatabase[iName]
+
+	return {
+		Name = iName,
+		Image = dbData and dbData.Image or "rbxassetid://134566735",
+		Rarity = {Name = r, Color = CaseData.RarityStats[r] and CaseData.RarityStats[r].Color or Color3.fromRGB(150,150,150)}
+	}
+end
+
+-- 🔥 FÁZE X: FUNKCE PRO ZOBRAZENÍ REKLAMNÍHO OKNA (DYNAMICKÁ ODMĚNA) 🔥
+local function ShowAdPrompt()
+	-- Získáme statistiky ze serveru pro dynamický výpočet
+	local GetStats = ReplicatedStorage:FindFirstChild("GetStats")
+	local bestVal = 0
+
+	-- Pcall zajistí, že to nespadne, i kdyby to trvalo nebo byl problém na serveru
+	if GetStats then
+		local success, stats = pcall(function() return GetStats:InvokeServer() end)
+		if success and stats then
+			bestVal = stats.HighestValue or 0
+		end
+	end
+
+	-- Dynamická rovnice (500 + 10% toho, co přidává nejmenší placený balíček)
+	local dynamicReward = 500 + math.floor(bestVal * 0.0001)
+	local rewardText = "$" .. FormatAbbreviated(dynamicReward)
+
+	local adPrompt = gui:FindFirstChild("AdPromptWindow")
+	if not adPrompt then
+		adPrompt = Instance.new("Frame", gui)
+		adPrompt.Name = "AdPromptWindow"
+		adPrompt.Size = UDim2.new(0, 350, 0, 230)
+		adPrompt.AnchorPoint = Vector2.new(0.5, 0.5)
+		adPrompt.Position = UDim2.new(0.5, 0, 0.5, 0)
+		adPrompt.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+		adPrompt.ZIndex = 200
+		Instance.new("UICorner", adPrompt).CornerRadius = UDim.new(0, 8)
+
+		local stroke = Instance.new("UIStroke", adPrompt)
+		stroke.Color = Color3.fromRGB(255, 215, 0)
+		stroke.Thickness = 2
+
+		local title = Instance.new("TextLabel", adPrompt)
+		title.Size = UDim2.new(1, 0, 0, 40)
+		title.Position = UDim2.new(0, 0, 0, 10)
+		title.BackgroundTransparency = 1
+		title.Text = "OUT OF CASH?"
+		title.TextColor3 = Color3.fromRGB(255, 80, 80)
+		title.Font = Enum.Font.GothamBlack
+		title.TextSize = 24
+		title.ZIndex = 201
+
+		local desc = Instance.new("TextLabel", adPrompt)
+		desc.Name = "Description" -- Důležité pro aktualizaci textu
+		desc.Size = UDim2.new(1, -40, 0, 60)
+		desc.Position = UDim2.new(0, 20, 0, 50)
+		desc.BackgroundTransparency = 1
+		-- Text se aktualizuje dole
+		desc.Text = ""
+		desc.TextColor3 = Color3.new(1, 1, 1)
+		desc.Font = Enum.Font.Gotham
+		desc.TextSize = 16
+		desc.TextWrapped = true
+		desc.ZIndex = 201
+
+		local closeBtn = Instance.new("TextButton", adPrompt)
+		closeBtn.Size = UDim2.new(0, 100, 0, 40)
+		closeBtn.Position = UDim2.new(0.5, -50, 1, -60)
+		closeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+		closeBtn.Text = "NO THANKS"
+		closeBtn.TextColor3 = Color3.new(1, 1, 1)
+		closeBtn.Font = Enum.Font.GothamBold
+		closeBtn.ZIndex = 201
+		Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+
+		closeBtn.MouseButton1Click:Connect(function()
+			adPrompt.Visible = false
+			previewWindow.Visible = true
+		end)
+
+		local adContainer = Instance.new("Frame", adPrompt)
+		adContainer.Name = "AdContainer"
+		adContainer.Size = UDim2.new(1, -40, 0, 50)
+		adContainer.Position = UDim2.new(0, 20, 0, 110)
+		adContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+		adContainer.BackgroundTransparency = 0.5
+		adContainer.ZIndex = 201
+		Instance.new("UICorner", adContainer).CornerRadius = UDim.new(0, 6)
+
+		local helperText = Instance.new("TextLabel", adContainer)
+		helperText.Size = UDim2.new(1, 0, 1, 0)
+		helperText.BackgroundTransparency = 1
+		helperText.Text = "(Roblox Ad Button goes here)"
+		helperText.TextColor3 = Color3.fromRGB(100, 100, 100)
+		helperText.Font = Enum.Font.Code
+		helperText.ZIndex = 200
+
+		local shopHint = Instance.new("TextLabel", adPrompt)
+		shopHint.Size = UDim2.new(1, 0, 0, 20)
+		shopHint.Position = UDim2.new(0, 0, 1, -20)
+		shopHint.BackgroundTransparency = 1
+		shopHint.Text = "Want more? Check out the shop!"
+		shopHint.TextColor3 = Color3.fromRGB(150, 150, 150)
+		shopHint.Font = Enum.Font.Gotham
+		shopHint.TextSize = 12
+		shopHint.ZIndex = 201
+	end
+
+	-- Pokaždé když se okno ukáže, upravíme text s aktuální nabídkou
+	local descLabel = adPrompt:FindFirstChild("Description")
+	if descLabel then
+		descLabel.Text = "Watch a short video ad to instantly receive " .. rewardText .. " and get back into the game!"
+	end
+
+	casesWindow.Visible = false
+	mainFrame.Visible = false
+	previewWindow.Visible = false
+	adPrompt.Visible = true
+
+	local sounds = workspace:FindFirstChild("GameSounds")
+	if sounds and sounds:FindFirstChild("UIClick") then
+		local sfx = sounds.UIClick:Clone()
+		sfx.PlaybackSpeed = 0.5
+		sfx.Parent = gui
+		sfx:Play()
+		Debris:AddItem(sfx, 1)
+	end
+end
+
 function AttemptSpin(caseName, price)
 	if isSpinning then return end
 	currentCasePrice = price
@@ -393,7 +543,8 @@ function AttemptSpin(caseName, price)
 				autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80)
 			end
 		end
-		previewWindow.Visible = true
+		-- Zavolání našeho nového reklamního okna
+		ShowAdPrompt()
 		return
 	end
 
@@ -448,7 +599,6 @@ function AttemptSpin(caseName, price)
 		openLvl = upgradesFolder.OpenLevel.Value
 	end
 
-	-- 🔥 OPRAVA RYCHLOSTI TOČENÍ
 	local speedMult = player:GetAttribute("SpeedMult") or 1.0
 	local SPIN_TIME = (6.0 + (openLvl * -0.2)) / speedMult
 	if SPIN_TIME < 0.2 then SPIN_TIME = 0.2 end 
@@ -464,10 +614,6 @@ function AttemptSpin(caseName, price)
 	spinLayout.FillDirection = Enum.FillDirection.Horizontal
 	spinLayout.Padding = UDim.new(0, PADDING)
 
-	-- 🔥 NAČTENÍ STATŮ PRO KŘOVÍ
-	local luckMult = player:GetAttribute("LuckMult") or 1.0
-	local mutMult = player:GetAttribute("MutationMult") or 1.0
-
 	for i = 1, TOTAL_ITEMS do
 		local success, err = pcall(function()
 			local card = template:Clone()
@@ -475,7 +621,8 @@ function AttemptSpin(caseName, price)
 			card.Visible = true
 			card.Parent = spinner
 
-			local itemToShow = (i == WINNER_INDEX) and result or CaseData.RollCase(caseName, luckMult, mutMult, 0)
+			-- ZDE JE TEN FIX NA LAG (Použije se lehká funkce)
+			local itemToShow = (i == WINNER_INDEX) and result or GetRandomVisualItem(caseName)
 
 			if type(itemToShow) ~= "table" then
 				itemToShow = { Name = "???", Image = "rbxassetid://134566735", Rarity = {Color = Color3.fromRGB(100,100,100)} }
@@ -517,23 +664,30 @@ function AttemptSpin(caseName, price)
 			novyText.Name = "ItemName"
 			novyText.AnchorPoint = Vector2.new(0.5, 0.5)
 			novyText.Position = UDim2.new(0.5, 0, 0.82, 0)
-			novyText.Size = UDim2.new(0.95, 0, 0.22, 0) 
+			novyText.Size = UDim2.new(0.95, 0, 0.30, 0) 
 			novyText.BackgroundTransparency = 1
 			novyText.Text = itemToShow.Name or "???"
 			novyText.TextScaled = true
+			novyText.TextWrapped = true
 			novyText.Font = Enum.Font.GothamBlack
-			novyText.TextColor3 = Color3.fromRGB(255, 255, 255)
+			novyText.TextColor3 = Color3.fromRGB(0, 0, 0) 
 			novyText.ZIndex = 5 
 			novyText.Parent = card
 
-			local obrys = Instance.new("UIStroke")
-			obrys.Color = Color3.fromRGB(0, 0, 0)
-			obrys.Thickness = 2
-			obrys.Parent = novyText
+			-- 🛠️ ZABRÁNÍ PŘETEČENÍ TEXTU
+			local constraint = Instance.new("UITextSizeConstraint")
+			constraint.MaxTextSize = 20
+			constraint.MinTextSize = 8
+			constraint.Parent = novyText
 		end)
 
 		if not success then
 			warn("Chyba pri generování karty: " .. tostring(err))
+		end
+
+		-- 🛠️ ZÁCHRANNÁ BRZDA PROTI ZÁSEKU: Roblox si po každých 15 kartách na mikrosekundu oddechne
+		if i % 15 == 0 then
+			RunService.RenderStepped:Wait()
 		end
 	end
 
@@ -554,7 +708,6 @@ function AttemptSpin(caseName, price)
 		local lastCardIndex = 0
 		local lastSoundTime = 0 
 
-		-- 🔥 ZVUKY BEDNY (TIKANÍ): Zjistí stav (pokud není uložen, defaultně zapnuto)
 		local playCaseSounds = player:GetAttribute("Pref_MutationVol")
 		if playCaseSounds == nil then
 			playCaseSounds = true
@@ -689,7 +842,7 @@ function ShowReward(item)
 		end
 	end
 
-	-- 🔥 3. EFEKTY A TŘESENÍ KAMERY (ABSOLUTNÍ BLOKACE)
+	-- 🔥 3. EFEKTY A TŘESENÍ KAMERY
 	local showEffects = player:GetAttribute("Pref_DropEffects")
 	if showEffects == nil then
 		showEffects = true
@@ -770,8 +923,6 @@ function ShowReward(item)
 
 			TweenService:Create(flash, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
 			Debris:AddItem(flash, 1) 
-
-			FireworkExplosion(item.Rarity.Color or Color3.new(1, 1, 1))
 		end
 	end
 
@@ -838,24 +989,24 @@ function ShowReward(item)
 							autoRollToggle.UIStroke.Color = Color3.fromRGB(255, 80, 80)
 						end
 					end
-					mainFrame.Visible = false
-					casesWindow.Visible = true
-					previewWindow.Visible = true
 					if openBtn then
 						openBtn.Visible = true
 					end
 					if rollingLabel then
 						rollingLabel.Visible = false
 					end
+					-- Místo prázdného okna hodíme reklamu
+					ShowAdPrompt()
 				end
 			end
 		end)
 	end
 
-	if _G.ClaimConnection then
-		_G.ClaimConnection:Disconnect()
+	if claimConnection then
+		claimConnection:Disconnect()
+		claimConnection = nil
 	end
-	_G.ClaimConnection = claimBtn.MouseButton1Click:Connect(function()
+	claimConnection = claimBtn.MouseButton1Click:Connect(function()
 		isAutoRolling = false
 		if autoRollToggle then
 			autoRollToggle.Text = "AUTO-ROLL: OFF"
